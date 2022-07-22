@@ -1,21 +1,52 @@
 package com.challenge.meli.ChallengeMeli.service.impl;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.challenge.meli.ChallengeMeli.dto.MutantRequest;
+import com.challenge.meli.ChallengeMeli.entity.Human;
+import com.challenge.meli.ChallengeMeli.repository.HumanDao;
 import com.challenge.meli.ChallengeMeli.service.MutantService;
 
 @Service
 public class MutantServiceImpl implements MutantService {
 
+	@Autowired
+	private HumanDao dnaDao;
+
 	public ResponseEntity<Object> detectMutant(MutantRequest request) {
 
-		if (isMutant(request.getDna())) {
-			return new ResponseEntity<Object>("es un mutante", HttpStatus.OK);
+		boolean mutant = isMutant(request.getDna());
+		saveDna(request.getDna(), mutant);
+		if (mutant) {
+			return new ResponseEntity<Object>("Es un mutante", HttpStatus.OK);
 		}
-		return new ResponseEntity<Object>("no es un mutante", HttpStatus.FORBIDDEN);
+		return new ResponseEntity<Object>("No es un mutante", HttpStatus.FORBIDDEN);
+
+	}
+
+	public ResponseEntity<Object> getAllHumans() {
+
+		List<Human> humans = dnaDao.findAll();
+		if (!humans.isEmpty()) {
+			return new ResponseEntity<Object>(humans, HttpStatus.OK);
+		}
+		return new ResponseEntity<Object>("No se han registrado humanos", HttpStatus.NOT_FOUND);
+	}
+
+	/**
+	 * Save the DNA of a given human and the flag to know if is a mutant or not.
+	 * 
+	 * @param dnaArray
+	 * @param isMutant
+	 */
+	private void saveDna(String[] dnaArray, boolean isMutant) {
+		Human dna = new Human(dnaArray, isMutant);
+		dnaDao.save(dna);
 
 	}
 
@@ -25,15 +56,16 @@ public class MutantServiceImpl implements MutantService {
 	 * detect if human is a mutant or not.
 	 * 
 	 * @param dna
-	 * @return
+	 * @return true is given dna is of a mutant
 	 */
 	private boolean isMutant(String[] dna) {
 
+		char[][] matrix = buildMatrix(dna);
 		for (int i = 0; i < dna.length; i++) {
 			if (verifyHorizontal(dna[i]))
 				return true;
 
-			if (verifyVertical(dna, i))
+			if (verifyVertical(matrix, dna, i))
 				return true;
 		}
 
@@ -88,9 +120,8 @@ public class MutantServiceImpl implements MutantService {
 	 * @return true if there are 4 consecutive equal letters in "dna", false
 	 *         otherwise.
 	 */
-	private boolean verifyVertical(String[] dna, int i) {
+	private boolean verifyVertical(char[][] matrix, String[] dna, int i) {
 		int repeated = 1;
-		char[][] matrix = buildMatrix(dna);
 		for (int j = 0; j < dna.length - 1; j++) {
 			if (matrix[j][i] == matrix[j + 1][i])
 				repeated++;

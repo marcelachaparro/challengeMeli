@@ -8,4 +8,5 @@ public interface MutantService {
 
 	ResponseEntity<Object> detectMutant(MutantRequest request);
 
+	ResponseEntity<Object> getAllHumans();
 }
