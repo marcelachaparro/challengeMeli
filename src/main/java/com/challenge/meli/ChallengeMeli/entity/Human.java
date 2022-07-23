@@ -6,13 +6,11 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
-@RedisHash("Human")
+@RedisHash("Humano")
 public class Human implements Serializable {
 
 	private static final long serialVersionUID = 5320934104158170909L;

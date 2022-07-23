@@ -23,4 +23,8 @@ public class HumanDao {
 	public List<Human> findAll() {
 		return template.opsForHash().values(HASH_KEY);
 	}
+
+	public void deleteAll() {
+		template.delete(HASH_KEY);
+	}
 }

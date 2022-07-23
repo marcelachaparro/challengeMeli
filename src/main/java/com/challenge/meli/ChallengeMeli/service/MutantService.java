@@ -8,5 +8,9 @@ public interface MutantService {
 
 	ResponseEntity<Object> detectMutant(MutantRequest request);
 
+	ResponseEntity<Object> calculateStats();
+
 	ResponseEntity<Object> getAllHumans();
+
+	ResponseEntity<Object> removeAllHumans();
 }

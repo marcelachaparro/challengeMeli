@@ -1,6 +1,7 @@
 package com.challenge.meli.ChallengeMeli.service.impl;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.challenge.meli.ChallengeMeli.dto.MutantRequest;
+import com.challenge.meli.ChallengeMeli.dto.ResponseStats;
 import com.challenge.meli.ChallengeMeli.entity.Human;
 import com.challenge.meli.ChallengeMeli.repository.HumanDao;
 import com.challenge.meli.ChallengeMeli.service.MutantService;
@@ -16,8 +18,11 @@ import com.challenge.meli.ChallengeMeli.service.MutantService;
 public class MutantServiceImpl implements MutantService {
 
 	@Autowired
-	private HumanDao dnaDao;
+	private HumanDao humanDao;
 
+	/**
+	 * Validate the dna in the request to return if is mutant
+	 */
 	public ResponseEntity<Object> detectMutant(MutantRequest request) {
 
 		boolean mutant = isMutant(request.getDna());
@@ -29,13 +34,42 @@ public class MutantServiceImpl implements MutantService {
 
 	}
 
+	/**
+	 * Calculate the stats of the received dna
+	 */
+	public ResponseEntity<Object> calculateStats() {
+		List<Human> humans = humanDao.findAll();
+		ResponseStats responseStats = new ResponseStats(0, 0, 0);
+		if (!humans.isEmpty()) {
+			List<Human> mutants = humans.stream().filter(h -> h.isMutant()).collect(Collectors.toList());
+
+			float ratio = (float) mutants.size() / (float) humans.size();
+			responseStats.setCountMutantDna(mutants.size());
+			responseStats.setCountHumanDna(humans.size());
+			responseStats.setRatio(ratio);
+		}
+		return new ResponseEntity<Object>(responseStats, HttpStatus.OK);
+	}
+
+	/**
+	 * Consult all humans saved
+	 */
 	public ResponseEntity<Object> getAllHumans() {
 
-		List<Human> humans = dnaDao.findAll();
+		List<Human> humans = humanDao.findAll();
 		if (!humans.isEmpty()) {
 			return new ResponseEntity<Object>(humans, HttpStatus.OK);
 		}
 		return new ResponseEntity<Object>("No se han registrado humanos", HttpStatus.NOT_FOUND);
+	}
+
+	/**
+	 * Remove all humans saved
+	 */
+	public ResponseEntity<Object> removeAllHumans() {
+
+		humanDao.deleteAll();
+		return new ResponseEntity<Object>("Se borraron los DNA almacenados", HttpStatus.OK);
 	}
 
 	/**
@@ -46,7 +80,7 @@ public class MutantServiceImpl implements MutantService {
 	 */
 	private void saveDna(String[] dnaArray, boolean isMutant) {
 		Human dna = new Human(dnaArray, isMutant);
-		dnaDao.save(dna);
+		humanDao.save(dna);
 
 	}
 
@@ -67,8 +101,10 @@ public class MutantServiceImpl implements MutantService {
 
 			if (verifyVertical(matrix, dna, i))
 				return true;
-		}
 
+		}
+		if (verifyDiagonal(dna))
+			return true;
 		return false;
 
 	}
@@ -112,11 +148,12 @@ public class MutantServiceImpl implements MutantService {
 	}
 
 	/**
-	 * Receives the array, build the 2d matrix and for each column compares the
-	 * letter with the letter below. Resets "repeated" to 1 if it is not consecutive
+	 * Receives the array and the 2d matrix and for each column compares the letter
+	 * with the letter below. Resets "repeated" to 1 if it is not consecutive
 	 * 
-	 * @param dna: array to compare
-	 * @param i:   position in the rows
+	 * @param matrix: dna as 2d array
+	 * @param dna:    array to compare
+	 * @param i:      position in the rows
 	 * @return true if there are 4 consecutive equal letters in "dna", false
 	 *         otherwise.
 	 */
@@ -131,5 +168,42 @@ public class MutantServiceImpl implements MutantService {
 				return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Receives the array in order to validate the diagonals from top left to bottom
+	 * right and from bottom left to top right.
+	 * 
+	 * @param dna
+	 * @return
+	 */
+	private boolean verifyDiagonal(String[] dna) {
+		int repeated = 0;
+		int yLenght = dna.length;
+		int xLenght = dna[0].length();
+		int maxLength = Math.max(xLenght, yLenght);
+
+		for (int k = 0; k < 2 * (maxLength - 1); ++k) {
+			String dnaDiagonal1 = "";
+			String dnaDiagonal2 = "";
+			for (int y = yLenght - 1; y >= 0; --y) {
+
+				int x = k - y;
+				if (x >= 0 && x < xLenght) {
+					dnaDiagonal1 += dna[y].charAt(x);
+				}
+				int xRight = k - (yLenght - y);
+				if (xRight >= 0 && xRight < xLenght) {
+					dnaDiagonal2 += dna[y].charAt(xRight);
+				}
+			}
+			// verify diagonal top left to bottom right (dnaDiagonal1)
+			if (dnaDiagonal1.length() >= 4 && verifyHorizontal(dnaDiagonal1))
+				repeated++;
+			// verify diagonal bottom left to top right (dnaDiagonal2)
+			if (dnaDiagonal2.length() >= 4 && verifyHorizontal(dnaDiagonal2))
+				repeated++;
+		}
+		return repeated >= 1;
 	}
 }
