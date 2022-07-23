@@ -4,7 +4,7 @@
 Esta API REST se encuentra hosteada en Amazon AWS, para hacer uso de ella, por favor ingresar al swagger de la siguiente ruta:
 http://44.201.191.8:8080/swagger-ui/
 
-La API dispone de cuatro servicios:
+La API dispone de cuatro servicios en el mutant-controller:
 
 * /api/v1/mutant: Recibe una cadena ADN para determinar si esta corresponde a la de un mutante y adicional guarda en base de datos esta informacion.
 
